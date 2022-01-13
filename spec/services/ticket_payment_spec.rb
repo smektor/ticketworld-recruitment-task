@@ -6,18 +6,33 @@ RSpec.describe TicketPayment do
 
     let(:ticket) { create(:ticket) }
     let(:token) { "token" }
-
+    let(:tickets_count) { 2 }
 
     context "when tickets are available" do
-      let(:tickets_count) { 1 }
+      let(:reservation) { Reservation.last }
+      let(:cost) { ticket.price * tickets_count}
+      let(:cleanup_job) { class_double("ReservationCleanupJob") }
+
+      it "should create reservation" do
+        expect(Reservation.last).to be_nil
+        subject
+        expect(reservation).to have_attributes(ticket_id: ticket.id,
+          tickets_count: tickets_count, cost: cost, status: "paid")
+      end
+
+      it "should call cleanup job" do
+        expect(ReservationCleanupJob).to receive(:set).with(wait: 15.minutes).and_return(cleanup_job)
+        expect(cleanup_job).to receive(:perform_later)
+        subject
+      end
 
       it "should call payment adapter" do
-        expect(Payment::Gateway).to receive(:charge).with(amount: ticket.price, token: token)
+        expect(Payment::Gateway).to receive(:charge).with(amount: cost, token: token)
         subject
       end
 
       it "should update available tickets count" do
-        expect { subject }.to change(ticket, :available).by(-1)
+        expect { subject }.to change(ticket, :available).by(tickets_count * (-1))
       end
     end
 

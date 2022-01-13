@@ -28,4 +28,24 @@ RSpec.describe Payment::Gateway do
       end
     end
   end
+
+  describe ".refund" do
+    subject { Payment::Gateway.refund(amount: 1, token: token) }
+
+    context "with valid token" do
+      let(:token) { "token" }
+
+      it "should be truthy" do
+        expect(subject).to be_truthy
+      end
+    end
+
+    context "with refund error" do
+      let(:token) { "refund_error" }
+
+      it "should raise error" do
+        expect { subject }.to raise_error(Payment::Gateway::RefundError)
+      end
+    end
+  end
 end

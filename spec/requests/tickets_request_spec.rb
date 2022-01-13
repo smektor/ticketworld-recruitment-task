@@ -79,7 +79,9 @@ RSpec.describe "Tickets", type: :request do
         let(:ticket) { event.ticket }
 
         context "valid params" do
-          let(:params) { { event_id: event.id, token: "token", tickets_count: "1" } }
+          let(:tickets_count) { 3 }
+          let(:params) { { event_id: event.id, token: "token", tickets_count: tickets_count.to_s } }
+          let(:reservation) { ticket.reservations.last }
 
           it "should have correct HTTP status" do
             expect(response).to have_http_status(:ok)
@@ -87,6 +89,14 @@ RSpec.describe "Tickets", type: :request do
 
           it "should render success message" do
             expect(response_json).to eq({ success: "Payment succeeded." })
+          end
+
+          it "should have paid reservation" do
+            expect(reservation.paid?).to be_truthy
+          end
+
+          it "should have reservation with correct tickets count" do
+            expect(reservation.tickets_count).to eq(tickets_count)
           end
         end
 
