@@ -29,6 +29,27 @@ RSpec.describe "Events", type: :request do
     end
   end
 
+  describe "GET events#available" do
+    subject { get "/events/available" }
+
+    let(:events_size) do
+      Event.where(time: DateTime.now..).count
+    end
+
+    before do
+      Event.take.update(time: DateTime.now - 1.hour)
+      subject
+    end
+
+    it "should have correct HTTP status" do
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "should render all available events" do
+      expect(response_json[:events].size).to eq(events_size)
+    end
+  end
+
   describe "GET events#show" do
     context "event exists" do
       subject { get "/events/#{event.id}" }

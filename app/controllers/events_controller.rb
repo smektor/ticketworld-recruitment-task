@@ -7,6 +7,12 @@ class EventsController < ApiController
     @events = Event.all
   end
 
+  def available
+    @events = Event.where(time: DateTime.now..)
+
+    render :index
+  end
+
   def show
     render :show
   end
