@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+RSpec::Matchers.define :a_big_decimal_around do |expected|
+  match do |actual|
+    BigDecimal(actual.to_s).round(2) == BigDecimal(expected.to_s).round(2)
+  end
+end
+
 RSpec.describe "Events", type: :request do
   shared_examples "event not found" do
     it "should have correct HTTP status" do
@@ -79,6 +85,39 @@ RSpec.describe "Events", type: :request do
 
     context "event does not exist" do
       before { get "/events/incorrect" }
+      it_behaves_like "event not found"
+    end
+  end
+
+  describe "GET events#tickets" do
+    subject { get "/events/#{event.id}/tickets" }
+
+    let(:event) { Event.first }
+    let(:ticket) { event.ticket }
+
+    before do
+      create(:reservation, ticket: ticket, status: :reserved)
+      create(:reservation, ticket: ticket, status: :paid)
+      subject
+    end
+
+    it "should have correct HTTP status" do
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "should render event tickets informations" do
+      expect(response_json).to include(
+        tickets: hash_including(
+          available: ticket.available,
+          reserved: ticket.reserved_count,
+          paid: ticket.paid_count,
+          price: a_big_decimal_around(ticket.price)
+        )
+      )
+    end
+
+    context "event does not exist" do
+      before { get "/events/incorrect/tickets" }
       it_behaves_like "event not found"
     end
   end

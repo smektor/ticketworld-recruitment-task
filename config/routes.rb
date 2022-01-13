@@ -3,6 +3,9 @@
 Rails.application.routes.draw do
   scope defaults: { format: 'json' } do
     resources :events, only: %i(index show) do
+      member do
+        get :tickets
+      end
       collection do
         get :available
       end

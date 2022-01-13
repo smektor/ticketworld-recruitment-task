@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class EventsController < ApiController
-  before_action :set_event, only: :show
+  before_action :set_event, only: [:show, :tickets]
 
   def index
     @events = Event.all
@@ -15,6 +15,12 @@ class EventsController < ApiController
 
   def show
     render :show
+  end
+
+  def tickets
+    @ticket = @event.ticket
+
+    render :tickets
   end
 
   private
