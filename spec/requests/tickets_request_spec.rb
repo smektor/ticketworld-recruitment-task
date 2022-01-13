@@ -11,6 +11,16 @@ RSpec.describe "Tickets", type: :request do
     end
   end
 
+  shared_examples "buy tickets success status and message" do
+    it "should have correct HTTP status" do
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "should render success message" do
+      expect(response_json).to eq({ success: "Payment succeeded." })
+    end
+  end
+
   describe "GET tickets#index" do
     context "event exists" do
       subject { get "/tickets", params: params }
@@ -77,19 +87,11 @@ RSpec.describe "Tickets", type: :request do
       context "ticket exists" do
         let(:event) { create(:event, :with_ticket) }
         let(:ticket) { event.ticket }
+        let(:params) { { event_id: event.id, token: "token", tickets_count: tickets_count.to_s } }
 
         context "valid params" do
           let(:tickets_count) { 3 }
-          let(:params) { { event_id: event.id, token: "token", tickets_count: tickets_count.to_s } }
           let(:reservation) { ticket.reservations.last }
-
-          it "should have correct HTTP status" do
-            expect(response).to have_http_status(:ok)
-          end
-
-          it "should render success message" do
-            expect(response_json).to eq({ success: "Payment succeeded." })
-          end
 
           it "should have paid reservation" do
             expect(reservation.paid?).to be_truthy
@@ -97,6 +99,62 @@ RSpec.describe "Tickets", type: :request do
 
           it "should have reservation with correct tickets count" do
             expect(reservation.tickets_count).to eq(tickets_count)
+          end
+
+          it_behaves_like "buy tickets success status and message"
+        end
+
+        context "validate tickets with" do
+          context "even validations" do
+            let(:event) { create(:event, :with_even_tickets) }
+
+            context "for event tickets amount" do
+              let(:tickets_count) { 2 }
+
+              it_behaves_like "buy tickets success status and message"
+            end
+
+            context "for odd tickets amount" do
+              let(:tickets_count) { 3 }
+
+              it "should have correct HTTP status" do
+                expect(response).to have_http_status(:unprocessable_entity)
+              end
+
+              it "should render error message" do
+                error_msg = "Validation failed: Tickets count can't buy odd amount of tickets"
+                expect(response_json).to eq({ error: error_msg})
+              end
+            end
+          end
+
+          context "avoid one left validation" do
+            let(:event) { create(:event, :with_avoid_one_tickets) }
+
+            context "when more than one ticket left" do
+              let(:tickets_count) { 3 }
+
+              it_behaves_like "buy tickets success status and message"
+            end
+
+            context "when all tickets bought" do
+              let(:tickets_count) { ticket.available }
+
+              it_behaves_like "buy tickets success status and message"
+            end
+
+            context "when one ticket left" do
+              let(:tickets_count) { ticket.available - 1 }
+
+              it "should have correct HTTP status" do
+                expect(response).to have_http_status(:unprocessable_entity)
+              end
+
+              it "should render error message" do
+                error_msg = "Validation failed: Tickets count can't leave only one ticket"
+                expect(response_json).to eq({ error: error_msg})
+              end
+            end
           end
         end
 

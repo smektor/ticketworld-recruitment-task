@@ -4,6 +4,7 @@ class ApiController < ApplicationController
   rescue_from TicketPayment::NotEnoughTicketsError, with: :conflict_error
   rescue_from Payment::Gateway::CardError, Payment::Gateway::PaymentError,
               with: :payment_failed_error
+  rescue_from ActiveRecord::RecordInvalid, with: :validation_error
 
   private
 
@@ -17,5 +18,9 @@ class ApiController < ApplicationController
 
   def payment_failed_error(error)
     render json: { error: error.message }, status: :payment_required
+  end
+
+  def validation_error(error)
+    render json: { error: error.message }, status: :unprocessable_entity
   end
 end

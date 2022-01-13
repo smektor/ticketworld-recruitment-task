@@ -11,8 +11,9 @@ class TicketPayment
 
     cost = ticket.price * tickets_count
     reservation = ActiveRecord::Base.transaction do
+      reservation = ticket.reservations.create!(tickets_count: tickets_count, cost: cost, status: :reserved)
       ticket.update!(available: available_tickets - tickets_count)
-      ticket.reservations.create!(tickets_count: tickets_count, cost: cost, status: :reserved)
+      reservation
     end
 
     ReservationCleanupJob.set(wait: RESERVATION_TIMEOUT).perform_later(reservation, ticket, payment_token)

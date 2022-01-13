@@ -4,6 +4,10 @@ class Ticket < ApplicationRecord
   belongs_to :event
   has_many :reservations, dependent: :destroy
 
+  enum validation_type: [:default, :even, :avoid_one]
+
+  validates :event, :price, :available, presence: true
+
   def reserved_count
     reservations.where(status: :reserved).sum(:tickets_count)
   end

@@ -10,5 +10,17 @@ FactoryBot.define do
         create(:ticket, event: event)
       end
     end
+
+    trait :with_even_tickets do
+      after(:create) do |event|
+        create(:ticket, event: event, validation_type: :even)
+      end
+    end
+
+    trait :with_avoid_one_tickets do
+      after(:create) do |event|
+        create(:ticket, event: event, validation_type: :avoid_one)
+      end
+    end
   end
 end
